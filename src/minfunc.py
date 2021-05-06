@@ -25,3 +25,15 @@ def minmod(x, y, z = None):
 # Returns the median value among x, y, and z (optional) or x_i, y_i, and z_i for vector input.
 def median(x, y, z):
     return x + minmod(y - x, z - x)
+
+# Returns the highest value among x, y, and z (optional) for scalar input or x_i, y_i, and z_i
+# for any i for vector input. x, y, and z can be either scalars or vectors of the same
+# length. If the input is a combination of vectors or vectors, all will be broadcasted
+# to vectors.
+def maxmax(x, y, z = None):
+    m = 1/2 * (x + y) + 1/2 * np.sign(x - y) * (x - y)
+    if z is None:
+        return m
+    else:
+        n = 1/2 * (m + z) + 1/2 * np.sign(m - z) * (m - z)
+        return n

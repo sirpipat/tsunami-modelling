@@ -26,13 +26,13 @@ class Grid(object):
     def set_grid(self, xmin, xmax, ngrid, nghost):
         pass
     
-    def set_value(self, u):
-        self._u = np.copy(u)
+    def set_value(self, u, option = 'all'):
+        pass
         
-    def get_grid(self, option = 'all'):
+    def get_grid(self, option = 'all', shift = 0):
         pass
     
-    def get_value(self, option = 'all'):
+    def get_value(self, option = 'all', shift = 0):
         pass
     
     def get_ndims(self):

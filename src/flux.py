@@ -63,6 +63,8 @@ def ICA5(x, u, c):
     uR = median(u1, np.roll(u, -1), uMPR)
     
     # Rusanov's flux
-    f = c/2 * (uL + uR) - np.abs(c)/2 * (uR - uL)
+    #c_max = maxmax(np.abs(c), np.roll(np.abs(c), -1)) * 1.1
+    c_max = c
+    f = c/2 * (uL + uR) - np.abs(c_max)/2 * (uR - uL)
     
     return f
