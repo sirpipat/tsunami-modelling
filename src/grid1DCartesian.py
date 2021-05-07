@@ -2,6 +2,7 @@
 Documentation for Grid1DCartesian Class
 """
 
+from copy import copy
 import numpy as np
 from grid1D import *
 
@@ -62,3 +63,84 @@ class Grid1DCartesian(Grid1D):
             return np.copy(self._u[(a[0]+shift):(b[0]+shift)])
         else:
             return np.copy(self._u)
+        
+    def __add__(self, other):
+        return self.__radd__(other)
+        
+    def __radd__(self, other):
+        # check input type
+        val = self._check_other_input(other)
+        
+        # construct a result object
+        r = copy(self)
+        self_val = self.get_value('all')
+        r.set_value(self_val + val, 'all')
+        return r
+    
+    def __sub__(self, other):
+        return self.__rsub__(other) * (-1)
+    
+    def __rsub__(self, other):
+        # check input type
+        val = self._check_other_input(other)
+        
+        # construct a result object
+        r = copy(self)
+        self_val = self.get_value('all')
+        r.set_value(val - self_val, 'all')
+        return r
+    
+    def __mul__(self, other):
+        return self.__rmul__(other)
+    
+    def __rmul__(self, other):
+        # check input type
+        val = self._check_other_input(other)
+        
+        # construct a result object
+        r = copy(self)
+        self_val = self.get_value('all')
+        r.set_value(self_val * val, 'all')
+        return r
+    
+    def __truediv__(self, other):
+        return self.__truediv__(other) ** (-1)
+    
+    def __rtruediv__(self, other):
+        # check input type
+        val = self._check_other_input(other)
+        
+        # construct a result object
+        r = copy(self)
+        self_val = self.get_value('all')
+        r.set_value(val / self_val, 'all')
+        return r
+    
+    def __pow__(self, other):
+        # check input type
+        val = self._check_other_input(other)
+        
+        # construct a result object
+        r = copy(self)
+        self_val = self.get_value('all')
+        r.set_value(self_val ** val, 'all')
+        return r
+    
+    def __getitem__(self, items):
+        assert items is int
+        return self.get_value('grid', items)
+            
+    def _check_other_input(self, other):
+        if type(other) is Grid1DCartesian:
+            assert other._xmin == self._xmin
+            assert other._xmax == self._xmax
+            assert other._ngrid == self._ngrid
+            assert other._nghost == self._nghost
+            val = other.get_value('all')
+        elif type(other) is np.ndarray:
+            assert np.size(other) == self._ngrid + 2 * self._nghost
+            val = other
+        else:
+            val = other
+        
+        return val
