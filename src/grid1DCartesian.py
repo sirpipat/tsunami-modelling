@@ -2,7 +2,7 @@
 Documentation for Grid1DCartesian Class
 """
 
-from copy import copy
+from copy import deepcopy
 import numpy as np
 from grid1D import *
 
@@ -64,6 +64,15 @@ class Grid1DCartesian(Grid1D):
         else:
             return np.copy(self._u)
         
+###################################################
+# Magic methods
+###################################################
+
+    def __abs__(self):
+        r = deepcopy(self)
+        r.set_value(np.abs(np.copy(self._u)), 'all')
+        return r
+    
     def __add__(self, other):
         return self.__radd__(other)
         
@@ -72,7 +81,7 @@ class Grid1DCartesian(Grid1D):
         val = self._check_other_input(other)
         
         # construct a result object
-        r = copy(self)
+        r = deepcopy(self)
         self_val = self.get_value('all')
         r.set_value(self_val + val, 'all')
         return r
@@ -85,7 +94,7 @@ class Grid1DCartesian(Grid1D):
         val = self._check_other_input(other)
         
         # construct a result object
-        r = copy(self)
+        r = deepcopy(self)
         self_val = self.get_value('all')
         r.set_value(val - self_val, 'all')
         return r
@@ -98,7 +107,7 @@ class Grid1DCartesian(Grid1D):
         val = self._check_other_input(other)
         
         # construct a result object
-        r = copy(self)
+        r = deepcopy(self)
         self_val = self.get_value('all')
         r.set_value(self_val * val, 'all')
         return r
@@ -111,7 +120,7 @@ class Grid1DCartesian(Grid1D):
         val = self._check_other_input(other)
         
         # construct a result object
-        r = copy(self)
+        r = deepcopy(self)
         self_val = self.get_value('all')
         r.set_value(val / self_val, 'all')
         return r
@@ -121,14 +130,23 @@ class Grid1DCartesian(Grid1D):
         val = self._check_other_input(other)
         
         # construct a result object
-        r = copy(self)
+        r = deepcopy(self)
         self_val = self.get_value('all')
         r.set_value(self_val ** val, 'all')
         return r
     
+    # usage:
+    # self[a]   returns self._u[nghost+a : nghost+ngrid+a]
+    # self[a,b] returns self._u[nghost+a : nghost+ngrid+b]
     def __getitem__(self, items):
-        assert items is int
-        return self.get_value('grid', items)
+        if type(items) is int:
+            return self.get_value('grid', items)
+        else: 
+            assert type(items) is tuple
+            assert len(items) == 2
+            a = self.get_first_grid()
+            b = self.get_last_grid()
+            return np.copy(self._u[(a[0]+items[0]):(b[0]+items[1])])
             
     def _check_other_input(self, other):
         if type(other) is Grid1DCartesian:
