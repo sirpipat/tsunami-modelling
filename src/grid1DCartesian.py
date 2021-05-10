@@ -4,7 +4,7 @@ Documentation for Grid1DCartesian Class
 
 from copy import deepcopy
 import numpy as np
-from grid1D import *
+from Grid1D import *
 
 class Grid1DCartesian(Grid1D):
     """
@@ -41,8 +41,8 @@ class Grid1DCartesian(Grid1D):
     def set_value(self, u, option = 'all'):
         if option == 'grid':
             assert np.size(u) == self._ngrid
-            a = self.get_first_index()
-            b = self.get_last_index()
+            a = self.get_first_grid()
+            b = self.get_last_grid()
             self._u[a[0]:b[0]] = np.copy(u)
         else:
             assert np.size(u) == self._ngrid + 2 * self._nghost
