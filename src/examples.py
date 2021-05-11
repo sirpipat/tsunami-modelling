@@ -1,5 +1,5 @@
 import numpy as np
-import ShallowWaterSim import *
+from ShallowWaterSim import *
 
 '''
 Workflow
@@ -54,10 +54,10 @@ def run_LeVeque2002():
     x = (x[:-1] + x[1:]) / 2
 
     # bathymetry
-    b = -0.8 * (x ** 0)
+    b = -0 * (x ** 0)
 
     # initial water surface
-    s = 1 * np.exp(- x**2 / 0.35**2)
+    s = 0.5 * np.exp(- x**2 / 0.35**2) + 1
 
     # initial speed
     u = x * 0
@@ -82,6 +82,43 @@ def run_LeVeque2002():
 
     tank.simulate(CFL, MAX_STEPS, times, output_directory)
     
+def run_simple():
+    # define grid points
+    xmin = -6
+    xmax = 6
+    N = 240
+    x = np.linspace(xmin, xmax, N+1)
+    x = (x[:-1] + x[1:]) / 2
+
+    # bathymetry
+    b = -0 * (x ** 0)
+
+    # initial water surface
+    s = 0.5 * np.exp(- x**2 / 0.35**2) + 1
+
+    # initial speed
+    u = x * 0 + 1
+
+    # boundary condition
+    bc = 'periodic'
+
+    # gravity acceleration 
+    g = 0
+
+    # initialize WaterWaveSim object
+    tank = ShallowWaterSim(x, b, s, u, g, bc)
+    
+    CFL = 0.1
+
+    # preventing the simulation to run eternally when dt is too small
+    MAX_STEPS = 100000
+
+    output_directory = '../output_simple/'
+
+    times = np.arange(0.5,5.5,0.5)
+
+    tank.simulate(CFL, MAX_STEPS, times, output_directory)
+    
 # PyClaw Example
 def run_sill():
     # define grid points
@@ -94,11 +131,11 @@ def run_sill():
     # bathymetry
     b = -1 * (x ** 0)
     where = np.where(np.abs(x) <= 0.92)[0]
-    b[where] = -1 + 0.8 * np.exp(-(x/0.2)**2)
+    b[where] = -1 + 0.8 * np.exp(-(x[where]/0.2)**2)
 
     # initial water surface
     s = 0 * x
-    s = 1 * np.exp(- ((x+0.4)/0.2)**2)
+    s = 0.1 * np.exp(- ((x+0.4)/0.2)**2)
 
     # initial speed
     u = x * 0
@@ -115,11 +152,11 @@ def run_sill():
     CFL = 0.1
 
     # preventing the simulation to run eternally when dt is too small
-    MAX_STEPS = 10000
+    MAX_STEPS = 100000
 
     output_directory = '../output_sill/'
 
-    times = np.arange(10)
+    times = np.arange(0.1,1.1,0.1)
 
     tank.simulate(CFL, MAX_STEPS, times, output_directory)
     

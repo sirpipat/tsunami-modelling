@@ -8,6 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from minfunc import *
 from Grid1DCartesian import *
+from interpolation_scheme import *
+from limiters import *
+from boundary_condition import *
 
 '''
 Representation
@@ -27,9 +30,9 @@ class ShallowWaterSim(object):
         xmax = x[-1] + (x[1] - x[0]) / 2
         Ngrid = np.size(x)
         if bc == 'periodic':
-            Nghost = 0
+            Nghost = 3
         else:
-            Nghost = 2
+            Nghost = 3
         
         # pad the values at the boundary for ghost cells
         b_padL = np.ones(Nghost) * b[0]
@@ -74,7 +77,17 @@ class ShallowWaterSim(object):
     def simulate(self, cfl = 0.1, \
                  max_steps = 100000, \
                  times = np.array([60,120,180]), \
-                 output_dir = 'outputs'):
+                 problem = 'passive', \
+                 output_dir = 'outputs', \
+                 interp_scheme = fourth_order_centered, \
+                 limiter = interp_SuHu5):
+        # either 'passive' or 'shallowwater'
+        self._problem = problem
+        if self._problem == 'passive':
+            self._g = 0
+        self._interp_scheme = interp_scheme
+        self._limiter = limiter
+        
         # create a subdirectory to hold outputs
         # (if it doesn't exist already)
         figures_dir = output_dir + "/figs"
@@ -103,6 +116,8 @@ class ShallowWaterSim(object):
             dt = cfl * dx / np.amax(np.abs(q[1][0,0]) + (self._g * q[0][0,0]) ** 0.5)
             # tell whether to take a snapshot
             if t + dt >= times[count]:
+                # change the time step so the next time exactly matches
+                #dt = times[count] - t
                 take_snapshot = True
                 count = count + 1
             else:
@@ -128,29 +143,103 @@ class ShallowWaterSim(object):
     def _advect_1step(self, x, q, b, g, t0, dt, bc = 'periodic'):
         # here assumes uniform grid
         dx = x[1] - x[0]
+        
+        # for passive advection problem, speed is not updated
+        if self._problem == 'passive':
+            u_flux_factor = 0
+        else:
+            u_flux_factor = 1
 
-        if bc == 'periodic':
+        if bc == 'periodicAAA':
+            # apply boundary conditions
+            if bc == 'reflecting':
+                apply_bc(q[0], 'reflecting_symmetric')
+                apply_bc(q[1], 'reflecting_antisymmetric')
+            elif bc == 'non-reflecting':
+                # do nothing
+                1+1
+            else:
+                apply_bc(q[0], bc)
+                apply_bc(q[1], bc)
             w0 = q
             f0 = self._flux(x, w0, b, g)
             df0 = - f0 + np.roll(f0, 1, axis = 1)
+            # convert flux differentiation to Grid array of the same shape as q
+            nghost = b.get_first_grid()[0]
+            pad = np.zeros((2, nghost))
+            df0 = np.concatenate((pad, df0, pad), axis = 1)
             df0Grid = deepcopy(q)
             df0Grid[0].set_value(df0[0,:], 'all')
-            df0Grid[1].set_value(df0[1,:], 'all')
+            df0Grid[1].set_value(df0[1,:] * u_flux_factor, 'all')
             w1 = w0 + (dt / dx) * df0Grid
+            
+            # apply boundary conditions
+            if bc == 'reflecting':
+                apply_bc(q[0], 'reflecting_symmetric')
+                apply_bc(q[1], 'reflecting_antisymmetric')
+            elif bc == 'non-reflecting':
+                # do nothing
+                1+1
+            else:
+                apply_bc(w1[0], bc)
+                apply_bc(w1[1], bc)
             f1 = self._flux(x, w1, b, g)
             df1 = - f1 + np.roll(f1, 1, axis = 1)
+            # convert flux differentiation to Grid array of the same shape as q
+            nghost = b.get_first_grid()[0]
+            pad = np.zeros((2, nghost))
+            df1 = np.concatenate((pad, df1, pad), axis = 1)
             df1Grid = deepcopy(q)
             df1Grid[0].set_value(df1[0,:], 'all')
-            df1Grid[1].set_value(df1[1,:], 'all')
+            df1Grid[1].set_value(df1[1,:] * u_flux_factor, 'all')
             w2 = 3/4 * w0 + 1/4 * (w1 + (dt / dx) * df1Grid)
+            
+            # apply boundary conditions
+            if bc == 'reflecting':
+                apply_bc(q[0], 'reflecting_symmetric')
+                apply_bc(q[1], 'reflecting_antisymmetric')
+            elif bc == 'non-reflecting':
+                # do nothing
+                1+1
+            else:
+                apply_bc(w2[0], bc)
+                apply_bc(w2[1], bc)
             f2 = self._flux(x, w2, b, g)
             df2 = - f2 + np.roll(f2, 1, axis = 1)
+            # convert flux differentiation to Grid array of the same shape as q
+            nghost = b.get_first_grid()[0]
+            pad = np.zeros((2, nghost))
+            df2 = np.concatenate((pad, df2, pad), axis = 1)
             df2Grid = deepcopy(q)
             df2Grid[0].set_value(df2[0,:], 'all')
-            df2Grid[1].set_value(df2[1,:], 'all')
+            df2Grid[1].set_value(df2[1,:]  * u_flux_factor, 'all')
             w3 = 1/3 * w0 + 2/3 * (w2 + (dt / dx) * df2Grid)
+            
+            # apply boundary conditions
+            if bc == 'reflecting':
+                apply_bc(q[0], 'reflecting_symmetric')
+                apply_bc(q[1], 'reflecting_antisymmetric')
+            elif bc == 'non-reflecting':
+                # do nothing
+                1+1
+            else:
+                apply_bc(w3[0], bc)
+                apply_bc(w3[1], bc)
+                
+                
             q_next = w3
         else:
+            # apply boundary conditions
+            if bc == 'reflecting':
+                apply_bc(q[0], 'reflecting_symmetric')
+                apply_bc(q[1], 'reflecting_antisymmetric')
+            elif bc == 'non-reflecting':
+                # do nothing
+                1+1
+            else:
+                apply_bc(q[0], bc)
+                apply_bc(q[1], bc)
+                
             w0 = q
             f0 = self._flux(x, w0, b, g, bc)
             # flux differentiation
@@ -161,19 +250,41 @@ class ShallowWaterSim(object):
             df0 = np.concatenate((pad, df0, pad), axis = 1)
             df0Grid = deepcopy(q)
             df0Grid[0].set_value(df0[0,:], 'all')
-            df0Grid[1].set_value(df0[1,:], 'all')
+            df0Grid[1].set_value(df0[1,:] * u_flux_factor, 'all')
             # update value
             w1 = w0 + (dt / dx) * df0Grid
 
+            # apply boundary conditions
+            if bc == 'reflecting':
+                apply_bc(w1[0], 'reflecting_symmetric')
+                apply_bc(w1[1], 'reflecting_antisymmetric')
+            elif bc == 'non-reflecting':
+                # do nothing
+                1+1
+            else:
+                apply_bc(w1[0], bc)
+                apply_bc(w1[1], bc)
+                
             f1 = self._flux(x, w1, b, g, bc)
             df1 = - f1[:,1:] + f1[:,0:-1]
             # convert flux differentiation to Grid array of the same shape as q
             df1 = np.concatenate((pad, df1, pad), axis = 1)
             df1Grid = deepcopy(q)
             df1Grid[0].set_value(df1[0,:], 'all')
-            df1Grid[1].set_value(df1[1,:], 'all')
+            df1Grid[1].set_value(df1[1,:] * u_flux_factor, 'all')
             # update value
             w2 = 3/4 * w0 + 1/4 * (w1 + (dt / dx) * df1Grid)
+            
+            # apply boundary conditions
+            if bc == 'reflecting':
+                apply_bc(w2[0], 'reflecting_symmetric')
+                apply_bc(w2[1], 'reflecting_antisymmetric')
+            elif bc == 'non-reflecting':
+                # do nothing
+                1+1
+            else:
+                apply_bc(w2[0], bc)
+                apply_bc(w2[1], bc)
 
             f2 = self._flux(x, w2, b, g, bc)
             df2 = - f2[:,1:] + f2[:,0:-1]
@@ -181,9 +292,21 @@ class ShallowWaterSim(object):
             df2 = np.concatenate((pad, df2, pad), axis = 1)
             df2Grid = deepcopy(q)
             df2Grid[0].set_value(df2[0,:], 'all')
-            df2Grid[1].set_value(df2[1,:], 'all')
+            df2Grid[1].set_value(df2[1,:] * u_flux_factor, 'all')
             # update value
             w3 = 1/3 * w0 + 2/3 * (w2 + (dt / dx) * df2Grid)
+            
+            # apply boundary conditions
+            if bc == 'reflecting':
+                apply_bc(w3[0], 'reflecting_symmetric')
+                apply_bc(w3[1], 'reflecting_antisymmetric')
+            elif bc == 'non-reflecting':
+                # do nothing
+                1+1
+            else:
+                apply_bc(w3[0], bc)
+                apply_bc(w3[1], bc)
+            
             q_next = w3
 
         t = t0 + dt
@@ -191,6 +314,21 @@ class ShallowWaterSim(object):
         return q_next, t
     
     def _flux(self, x, q, b, g, bc = 'periodic'):
+        
+        c_abs = np.abs(q[1]) + (g * q[0]) ** 0.5
+        c_max = maxmax(c_abs[0,1], c_abs[-1,0]) * 1.1
+        
+        alpha = 4
+        
+        hL = self._limiter(q[0], alpha, self._interp_scheme)
+        hR = np.flip(self._limiter(q[0].get_flip(), alpha, self._interp_scheme))
+        uL = self._limiter(q[1], alpha, self._interp_scheme)
+        uR = np.flip(self._limiter(q[1].get_flip(), alpha, self._interp_scheme))
+        bL = self._limiter(b, alpha, self._interp_scheme)
+        bR = np.flip(self._limiter(b.get_flip(), alpha, self._interp_scheme))
+        '''
+        ### REMOVE EVERYTHING BETWEEN THE QUOTE
+        
         if bc == 'periodic':
             q0 = q[0].get_value('grid')
             q1 = q[1].get_value('grid')
@@ -209,12 +347,17 @@ class ShallowWaterSim(object):
             hL, hR = self._find_uL_uR(x, q[0], bc)
             uL, uR = self._find_uL_uR(x, q[1], bc)
             bL, bR = self._find_uL_uR(x, b, bc)
+        '''
 
         f_hatL = self._flux_hat(hL, uL, bL, g)
         f_hatR = self._flux_hat(hR, uR, bR, g)
 
         # Rusanov's method
         f = 1/2 * (f_hatL + f_hatR) - 1/2 * np.abs(c_max) * np.array([hR - hL, uR - uL])
+        '''
+        if bc == 'periodic':
+            f = np.concatenate((f[:,-1:], f), axis = 1)
+        '''
         return f
 
     # make the function name more descriptive and relevant

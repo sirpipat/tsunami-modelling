@@ -22,6 +22,10 @@ def minmod(x, y, z = None):
         return 0.25 * (np.sign(x) + np.sign(y)) * np.abs(np.sign(y) + np.sign(z)) * \
                minmin(np.abs(x), np.abs(y), np.abs(z))
 
+# same as minmod but takes 4 arguments (required all of them)
+def minmod4(x, y, z, w):
+    return minmod(minmod(x, y, z), w)
+
 # Returns the median value among x, y, and z (optional) or x_i, y_i, and z_i for vector input.
 def median(x, y, z):
     return x + minmod(y - x, z - x)
