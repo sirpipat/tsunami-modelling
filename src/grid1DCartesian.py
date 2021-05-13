@@ -43,26 +43,31 @@ class Grid1DCartesian(Grid1D):
             assert np.size(u) == self._ngrid
             a = self.get_first_grid()
             b = self.get_last_grid()
-            self._u[a[0]:b[0]] = np.copy(u)
+            self._u[a[0]:b[0]] = deepcopy(u)
         else:
             assert np.size(u) == self._ngrid + 2 * self._nghost
-            self._u = np.copy(u)
+            self._u = deepcopy(u)
         
     def get_grid(self, option = 'all', shift = 0):
         if option == 'grid':
             a = self.get_first_grid()
             b = self.get_last_grid()
-            return np.copy(self._x[(a[0]+shift):(b[0]+shift)])
+            return deepcopy(self._x[(a[0]+shift):(b[0]+shift)])
         else:
-            return np.copy(self._x)
+            return deepcopy(self._x)
         
     def get_value(self, option = 'all', shift = 0):
         if option == 'grid':
             a = self.get_first_grid()
             b = self.get_last_grid()
-            return np.copy(self._u[(a[0]+shift):(b[0]+shift)])
+            return deepcopy(self._u[(a[0]+shift):(b[0]+shift)])
         else:
-            return np.copy(self._u)
+            return deepcopy(self._u)
+        
+    def get_flip(self):
+        flipped = deepcopy(self)
+        flipped.set_value(np.flip(self.get_value('all')), 'all')
+        return flipped
         
 ###################################################
 # Magic methods
@@ -70,7 +75,7 @@ class Grid1DCartesian(Grid1D):
 
     def __abs__(self):
         r = deepcopy(self)
-        r.set_value(np.abs(np.copy(self._u)), 'all')
+        r.set_value(np.abs(deepcopy(self._u)), 'all')
         return r
     
     def __add__(self, other):
@@ -146,7 +151,7 @@ class Grid1DCartesian(Grid1D):
             assert len(items) == 2
             a = self.get_first_grid()
             b = self.get_last_grid()
-            return np.copy(self._u[(a[0]+items[0]):(b[0]+items[1])])
+            return deepcopy(self._u[(a[0]+items[0]):(b[0]+items[1])])
             
     def _check_other_input(self, other):
         if type(other) is Grid1DCartesian:
