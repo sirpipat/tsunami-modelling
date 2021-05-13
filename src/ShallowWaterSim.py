@@ -117,7 +117,7 @@ class ShallowWaterSim(object):
             # tell whether to take a snapshot
             if t + dt >= times[count]:
                 # change the time step so the next time exactly matches
-                #dt = times[count] - t
+                dt = times[count] - t
                 take_snapshot = True
                 count = count + 1
             else:
@@ -138,6 +138,9 @@ class ShallowWaterSim(object):
             if steps >= max_steps:
                 print('The number of steps reach the maximum limit. Exit.\n')
                 break
+                
+        print('The simulation is completed\n')
+        return q[0], q[1]
     
     # advect 1 step
     def _advect_1step(self, x, q, b, g, t0, dt, bc = 'periodic'):
@@ -150,164 +153,87 @@ class ShallowWaterSim(object):
         else:
             u_flux_factor = 1
 
-        if bc == 'periodicAAA':
-            # apply boundary conditions
-            if bc == 'reflecting':
-                apply_bc(q[0], 'reflecting_symmetric')
-                apply_bc(q[1], 'reflecting_antisymmetric')
-            elif bc == 'non-reflecting':
-                # do nothing
-                1+1
-            else:
-                apply_bc(q[0], bc)
-                apply_bc(q[1], bc)
-            w0 = q
-            f0 = self._flux(x, w0, b, g)
-            df0 = - f0 + np.roll(f0, 1, axis = 1)
-            # convert flux differentiation to Grid array of the same shape as q
-            nghost = b.get_first_grid()[0]
-            pad = np.zeros((2, nghost))
-            df0 = np.concatenate((pad, df0, pad), axis = 1)
-            df0Grid = deepcopy(q)
-            df0Grid[0].set_value(df0[0,:], 'all')
-            df0Grid[1].set_value(df0[1,:] * u_flux_factor, 'all')
-            w1 = w0 + (dt / dx) * df0Grid
-            
-            # apply boundary conditions
-            if bc == 'reflecting':
-                apply_bc(q[0], 'reflecting_symmetric')
-                apply_bc(q[1], 'reflecting_antisymmetric')
-            elif bc == 'non-reflecting':
-                # do nothing
-                1+1
-            else:
-                apply_bc(w1[0], bc)
-                apply_bc(w1[1], bc)
-            f1 = self._flux(x, w1, b, g)
-            df1 = - f1 + np.roll(f1, 1, axis = 1)
-            # convert flux differentiation to Grid array of the same shape as q
-            nghost = b.get_first_grid()[0]
-            pad = np.zeros((2, nghost))
-            df1 = np.concatenate((pad, df1, pad), axis = 1)
-            df1Grid = deepcopy(q)
-            df1Grid[0].set_value(df1[0,:], 'all')
-            df1Grid[1].set_value(df1[1,:] * u_flux_factor, 'all')
-            w2 = 3/4 * w0 + 1/4 * (w1 + (dt / dx) * df1Grid)
-            
-            # apply boundary conditions
-            if bc == 'reflecting':
-                apply_bc(q[0], 'reflecting_symmetric')
-                apply_bc(q[1], 'reflecting_antisymmetric')
-            elif bc == 'non-reflecting':
-                # do nothing
-                1+1
-            else:
-                apply_bc(w2[0], bc)
-                apply_bc(w2[1], bc)
-            f2 = self._flux(x, w2, b, g)
-            df2 = - f2 + np.roll(f2, 1, axis = 1)
-            # convert flux differentiation to Grid array of the same shape as q
-            nghost = b.get_first_grid()[0]
-            pad = np.zeros((2, nghost))
-            df2 = np.concatenate((pad, df2, pad), axis = 1)
-            df2Grid = deepcopy(q)
-            df2Grid[0].set_value(df2[0,:], 'all')
-            df2Grid[1].set_value(df2[1,:]  * u_flux_factor, 'all')
-            w3 = 1/3 * w0 + 2/3 * (w2 + (dt / dx) * df2Grid)
-            
-            # apply boundary conditions
-            if bc == 'reflecting':
-                apply_bc(q[0], 'reflecting_symmetric')
-                apply_bc(q[1], 'reflecting_antisymmetric')
-            elif bc == 'non-reflecting':
-                # do nothing
-                1+1
-            else:
-                apply_bc(w3[0], bc)
-                apply_bc(w3[1], bc)
-                
-                
-            q_next = w3
+        
+        
+        # apply boundary conditions
+        if bc == 'reflecting':
+            apply_bc(q[0], 'reflecting_symmetric')
+            apply_bc(q[1], 'reflecting_antisymmetric')
+        elif bc == 'non-reflecting':
+            # do nothing
+            1+1
         else:
-            # apply boundary conditions
-            if bc == 'reflecting':
-                apply_bc(q[0], 'reflecting_symmetric')
-                apply_bc(q[1], 'reflecting_antisymmetric')
-            elif bc == 'non-reflecting':
-                # do nothing
-                1+1
-            else:
-                apply_bc(q[0], bc)
-                apply_bc(q[1], bc)
-                
-            w0 = q
-            f0 = self._flux(x, w0, b, g, bc)
-            # flux differentiation
-            df0 = - f0[:,1:] + f0[:,0:-1]
-            # convert flux differentiation to Grid array of the same shape as q
-            nghost = b.get_first_grid()[0]
-            pad = np.zeros((2, nghost))
-            df0 = np.concatenate((pad, df0, pad), axis = 1)
-            df0Grid = deepcopy(q)
-            df0Grid[0].set_value(df0[0,:], 'all')
-            df0Grid[1].set_value(df0[1,:] * u_flux_factor, 'all')
-            # update value
-            w1 = w0 + (dt / dx) * df0Grid
+            apply_bc(q[0], bc)
+            apply_bc(q[1], bc)
 
-            # apply boundary conditions
-            if bc == 'reflecting':
-                apply_bc(w1[0], 'reflecting_symmetric')
-                apply_bc(w1[1], 'reflecting_antisymmetric')
-            elif bc == 'non-reflecting':
-                # do nothing
-                1+1
-            else:
-                apply_bc(w1[0], bc)
-                apply_bc(w1[1], bc)
-                
-            f1 = self._flux(x, w1, b, g, bc)
-            df1 = - f1[:,1:] + f1[:,0:-1]
-            # convert flux differentiation to Grid array of the same shape as q
-            df1 = np.concatenate((pad, df1, pad), axis = 1)
-            df1Grid = deepcopy(q)
-            df1Grid[0].set_value(df1[0,:], 'all')
-            df1Grid[1].set_value(df1[1,:] * u_flux_factor, 'all')
-            # update value
-            w2 = 3/4 * w0 + 1/4 * (w1 + (dt / dx) * df1Grid)
-            
-            # apply boundary conditions
-            if bc == 'reflecting':
-                apply_bc(w2[0], 'reflecting_symmetric')
-                apply_bc(w2[1], 'reflecting_antisymmetric')
-            elif bc == 'non-reflecting':
-                # do nothing
-                1+1
-            else:
-                apply_bc(w2[0], bc)
-                apply_bc(w2[1], bc)
+        w0 = q
+        f0 = self._flux(x, w0, b, g, bc)
+        # flux differentiation
+        df0 = - f0[:,1:] + f0[:,0:-1]
+        # convert flux differentiation to Grid array of the same shape as q
+        nghost = b.get_first_grid()[0]
+        pad = np.zeros((2, nghost))
+        df0 = np.concatenate((pad, df0, pad), axis = 1)
+        df0Grid = deepcopy(q)
+        df0Grid[0].set_value(df0[0,:], 'all')
+        df0Grid[1].set_value(df0[1,:] * u_flux_factor, 'all')
+        # update value
+        w1 = w0 + (dt / dx) * df0Grid
 
-            f2 = self._flux(x, w2, b, g, bc)
-            df2 = - f2[:,1:] + f2[:,0:-1]
-            # convert flux differentiation to Grid array of the same shape as q
-            df2 = np.concatenate((pad, df2, pad), axis = 1)
-            df2Grid = deepcopy(q)
-            df2Grid[0].set_value(df2[0,:], 'all')
-            df2Grid[1].set_value(df2[1,:] * u_flux_factor, 'all')
-            # update value
-            w3 = 1/3 * w0 + 2/3 * (w2 + (dt / dx) * df2Grid)
-            
-            # apply boundary conditions
-            if bc == 'reflecting':
-                apply_bc(w3[0], 'reflecting_symmetric')
-                apply_bc(w3[1], 'reflecting_antisymmetric')
-            elif bc == 'non-reflecting':
-                # do nothing
-                1+1
-            else:
-                apply_bc(w3[0], bc)
-                apply_bc(w3[1], bc)
-            
-            q_next = w3
+        # apply boundary conditions
+        if bc == 'reflecting':
+            apply_bc(w1[0], 'reflecting_symmetric')
+            apply_bc(w1[1], 'reflecting_antisymmetric')
+        elif bc == 'non-reflecting':
+            # do nothing
+            1+1
+        else:
+            apply_bc(w1[0], bc)
+            apply_bc(w1[1], bc)
+
+        f1 = self._flux(x, w1, b, g, bc)
+        df1 = - f1[:,1:] + f1[:,0:-1]
+        # convert flux differentiation to Grid array of the same shape as q
+        df1 = np.concatenate((pad, df1, pad), axis = 1)
+        df1Grid = deepcopy(q)
+        df1Grid[0].set_value(df1[0,:], 'all')
+        df1Grid[1].set_value(df1[1,:] * u_flux_factor, 'all')
+        # update value
+        w2 = 3/4 * w0 + 1/4 * (w1 + (dt / dx) * df1Grid)
+
+        # apply boundary conditions
+        if bc == 'reflecting':
+            apply_bc(w2[0], 'reflecting_symmetric')
+            apply_bc(w2[1], 'reflecting_antisymmetric')
+        elif bc == 'non-reflecting':
+            # do nothing
+            1+1
+        else:
+            apply_bc(w2[0], bc)
+            apply_bc(w2[1], bc)
+
+        f2 = self._flux(x, w2, b, g, bc)
+        df2 = - f2[:,1:] + f2[:,0:-1]
+        # convert flux differentiation to Grid array of the same shape as q
+        df2 = np.concatenate((pad, df2, pad), axis = 1)
+        df2Grid = deepcopy(q)
+        df2Grid[0].set_value(df2[0,:], 'all')
+        df2Grid[1].set_value(df2[1,:] * u_flux_factor, 'all')
+        # update value
+        w3 = 1/3 * w0 + 2/3 * (w2 + (dt / dx) * df2Grid)
+
+        # apply boundary conditions
+        if bc == 'reflecting':
+            apply_bc(w3[0], 'reflecting_symmetric')
+            apply_bc(w3[1], 'reflecting_antisymmetric')
+        elif bc == 'non-reflecting':
+            # do nothing
+            1+1
+        else:
+            apply_bc(w3[0], bc)
+            apply_bc(w3[1], bc)
+
+        q_next = w3
 
         t = t0 + dt
 

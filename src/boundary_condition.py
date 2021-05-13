@@ -34,7 +34,7 @@ def apply_reflecting_symmetric(u):
         # ghost cells on the left
         u._u[ii] = u._u[Nghost]
         # ghost cells on the right
-        u._u[Ngrid + ii] = u._u[Ngrid - 1]
+        u._u[Ngrid + Nghost + ii] = u._u[Ngrid + Nghost - 1]
         
 def apply_reflecting_antisymmetric(u):
     Nghost = u._nghost[0]
@@ -43,4 +43,4 @@ def apply_reflecting_antisymmetric(u):
         # ghost cells on the left
         u._u[ii] = - u._u[Nghost]
         # ghost cells on the right
-        u._u[Ngrid + ii] = - u._u[Ngrid - 1]
+        u._u[Ngrid + Nghost + ii] = - u._u[Ngrid + Nghost - 1]
