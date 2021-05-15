@@ -18,6 +18,7 @@ class Grid1DCartesian(Grid1D):
         self._ngrid = ngrid  * np.array([1])
         self._nghost = nghost * np.array([1])
         
+        # define the grid
         dx = (xmax - xmin) / ngrid
         x = np.linspace(xmin - dx * nghost, \
                         xmax + dx * nghost, \
@@ -31,6 +32,7 @@ class Grid1DCartesian(Grid1D):
         self._ngrid = ngrid  * np.array([1])
         self._nghost = nghost * np.array([1])
         
+        # define the grid
         dx = (xmax - xmin) / ngrid
         x = np.linspace(xmin - dx * nghost, \
                         xmax + dx * nghost, \
@@ -40,12 +42,14 @@ class Grid1DCartesian(Grid1D):
         
     def set_value(self, u, option = 'all'):
         if option == 'grid':
-            assert np.size(u) == self._ngrid
+            if np.size(u) != self._ngrid:
+                raise ValueError('Input does not have the same size as the domain\n')
             a = self.get_first_grid()
             b = self.get_last_grid()
             self._u[a[0]:b[0]] = deepcopy(u)
         else:
-            assert np.size(u) == self._ngrid + 2 * self._nghost
+            if np.size(u) == self._ngrid + 2 * self._nghost:
+                raise ValueError('Input does not have the same size as the grid\n')
             self._u = deepcopy(u)
         
     def get_grid(self, option = 'all', shift = 0):
@@ -64,6 +68,9 @@ class Grid1DCartesian(Grid1D):
         else:
             return deepcopy(self._u)
         
+    """
+    Returns a flipped version of the Grid
+    """
     def get_flip(self):
         flipped = deepcopy(self)
         flipped.set_value(np.flip(self.get_value('all')), 'all')
@@ -72,15 +79,23 @@ class Grid1DCartesian(Grid1D):
 ###################################################
 # Magic methods
 ###################################################
-
+    """
+    Returns a new Grid1DCartesian with the absolute values 
+    """
     def __abs__(self):
         r = deepcopy(self)
         r.set_value(np.abs(deepcopy(self._u)), 'all')
         return r
     
+    """
+    Returns a new Grid1DCartesian with value added
+    """
     def __add__(self, other):
         return self.__radd__(other)
-        
+    
+    """
+    Allows a Grid1DCartesian to be added from the left
+    """
     def __radd__(self, other):
         # check input type
         val = self._check_other_input(other)
@@ -91,9 +106,15 @@ class Grid1DCartesian(Grid1D):
         r.set_value(self_val + val, 'all')
         return r
     
+    """
+    Returns a new Grid1DCartesian with value subtracted
+    """
     def __sub__(self, other):
         return self.__rsub__(other) * (-1)
     
+    """
+    Allows a Grid1DCartesian to be subtracted from the left
+    """
     def __rsub__(self, other):
         # check input type
         val = self._check_other_input(other)
@@ -104,9 +125,15 @@ class Grid1DCartesian(Grid1D):
         r.set_value(val - self_val, 'all')
         return r
     
+    """
+    Returns a new Grid1DCartesian with value multiplied
+    """
     def __mul__(self, other):
         return self.__rmul__(other)
     
+    """
+    Allows a Grid1DCartesian to be multiplied from the left
+    """
     def __rmul__(self, other):
         # check input type
         val = self._check_other_input(other)
@@ -117,9 +144,15 @@ class Grid1DCartesian(Grid1D):
         r.set_value(self_val * val, 'all')
         return r
     
+    """
+    Returns a new Grid1DCartesian with value divided
+    """
     def __truediv__(self, other):
         return self.__truediv__(other) ** (-1)
     
+    """
+    Allows a Grid1DCartesian to divide a value on the left
+    """
     def __rtruediv__(self, other):
         # check input type
         val = self._check_other_input(other)
@@ -130,6 +163,9 @@ class Grid1DCartesian(Grid1D):
         r.set_value(val / self_val, 'all')
         return r
     
+    """
+    Returns a new Grid1DCartesian with value powered by a float
+    """
     def __pow__(self, other):
         # check input type
         val = self._check_other_input(other)
@@ -140,9 +176,14 @@ class Grid1DCartesian(Grid1D):
         r.set_value(self_val ** val, 'all')
         return r
     
-    # usage:
-    # self[a]   returns self._u[nghost+a : nghost+ngrid+a]
-    # self[a,b] returns self._u[nghost+a : nghost+ngrid+b]
+    """
+    Return a numpy array starting at a-th cell in the domain of interest
+    and ending at b-th cell counting past the end of the domain of interest
+    
+    usage:
+    self[a]   returns self._u[nghost+a : nghost+ngrid+a]
+    self[a,b] returns self._u[nghost+a : nghost+ngrid+b]
+    """
     def __getitem__(self, items):
         if type(items) is int:
             return self.get_value('grid', items)
@@ -153,15 +194,18 @@ class Grid1DCartesian(Grid1D):
             b = self.get_last_grid()
             return deepcopy(self._u[(a[0]+items[0]):(b[0]+items[1])])
             
+    """
+    Checks if the input value is a Grid1DCartesian, a numpy array, or a float
+    and handles accordingly.
+    """
     def _check_other_input(self, other):
         if type(other) is Grid1DCartesian:
-            assert other._xmin == self._xmin
-            assert other._xmax == self._xmax
-            assert other._ngrid == self._ngrid
-            assert other._nghost == self._nghost
+            if other._xmin == self._xmin or other._xmax == self._xmax or other._ngrid == self._ngrid or other._nghost == self._nghost:
+                raise ValueError('Two grids do not have the same grid points.\n')
             val = other.get_value('all')
         elif type(other) is np.ndarray:
-            assert np.size(other) == self._ngrid + 2 * self._nghost
+            if np.size(other) == self._ngrid + 2 * self._nghost:
+                raise ValueError('Input does not have the same size as the grid\n')
             val = other
         else:
             val = other
