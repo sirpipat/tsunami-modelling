@@ -17,4 +17,4 @@ git clone git@github.com:sirpipat/tsunami-modelling.git
 
 The [Anaconda Python Distribution](https://docs.anaconda.com/anaconda/install/) is an easy way to get all of these.
 
-Please read [examples.py](https://github.com/sirpipat/tsunami-modelling/blob/main/src/examples.py) to learn how to use the package.
+Please read [examples.py](https://github.com/sirpipat/tsunami-modelling/blob/main/src/examples.py) to learn how to use the package. You may try to oepn [Demonstration.ipynb](https://github.com/sirpipat/tsunami-modelling/blob/main/src/Demonstration.ipynb) to see the example results without running yourself.
