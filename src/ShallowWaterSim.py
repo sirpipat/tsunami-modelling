@@ -14,7 +14,6 @@ from boundary_condition import *
 
 '''
 Representation
-
 ----- created during initialization -----
 _bGrid          bathymetry
 _hGrid          water depth (from bottom to surface)
@@ -24,7 +23,6 @@ _bc             boundary conditions
                     'periodic'
                     'reflecting'
                     'non-reflecting'
-
 ------- created during simulation -------
 _problem        type of problems
                     'passive'

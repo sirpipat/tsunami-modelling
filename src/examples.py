@@ -1,5 +1,6 @@
 import numpy as np
 from ShallowWaterSim import *
+from ShallowWaterData import *
 
 '''
 This file contain workflow of using ShallowWaterSim objects as well as 
@@ -68,6 +69,10 @@ limiter = interp_vanLeer3
 hGrid, uGrid = ocean.simulate(CFL, MAX_STEPS, times, problem, \
                               output_directory, interp_scheme, \
                               limiter)
+                              
+Notes on example runs:
+Example 1, 2, and 3 should be quick.
+Example 4 and 5 take quite long (several hours) to complete
 '''
 ###################################################################################
 # Example 1: convergence test on simple advection problem with SuHu5 limiter,
@@ -76,7 +81,7 @@ hGrid, uGrid = ocean.simulate(CFL, MAX_STEPS, times, problem, \
 def simple_convergence():
     # the number of grid cells
     # remove the last few elements if the runs take too long
-    Ns = np.array([50,100,200,400,800,1600,3200,6400,12800, 25600])
+    Ns = np.array([50,100,200,400,800,1600,3200])
     # RMS errors
     err_RMSs = np.zeros(np.shape(Ns))
     dxs = np.zeros(np.shape(Ns))
@@ -93,15 +98,17 @@ def simple_convergence():
     plt.ylabel('RMS error', size = 12)
     plt.title('RMS error, CFL = 0.1')
     plt.savefig('../RMS_ERROR_5u_SuHu5_CFL_0p5.pdf', dpi = 300)
+    plt.show()
     
     # plot empirical rate of convergence (based on RMS error)
     p = np.log2((err_RMSs[:-2] - err_RMSs[1:-1]) / (err_RMSs[1:-1] - err_RMSs[2:]))
-    plt.semilogx(dxs[:-2],p, '-o')
+    plt.semilogx(dxs[2:],p, '-o')
     plt.grid()
     plt.xlabel('dx', size = 12)
     plt.ylabel('empirical p', size = 12)
     plt.title('Empirical rate of convergence, CFL = 0.1')
     plt.savefig('../Empirical_p_5u_SuHu5_CFL_0p5.pdf', dpi = 300)
+    plt.show()
     
     # Example for reading files and plot the data (integration of water height)
     # the volume should be conserved!
@@ -132,10 +139,7 @@ def residue_simple(N=100):
     b = -1 * (x ** 0)
 
     # initial water surface
-    #xxx, xxx, s = init_smooth_cell(N, init_smooth)
     s = 1 * np.exp(- (x-0.5)**2 / (2 * 0.05**2)) + 0
-    #where = np.where(np.abs(x - 0.7) <= 0.1)
-    #s[where] = 1
 
     # initial speed
     u = x * 0 + 1
@@ -154,7 +158,7 @@ def residue_simple(N=100):
     # preventing the simulation to run eternally when dt is too small
     MAX_STEPS = 150000
 
-    output_directory = '../outputs_convergence/output_simple_5u_SuHu5_CFL_0.5/'
+    output_directory = '../outputs_convergence/output_simple_5u_SuHu5_CFL_0p5/'
 
     times = np.array([1])
 
