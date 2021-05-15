@@ -8,4 +8,9 @@ To install this package
 git clone git@github.com:sirpipat/tsunami-modelling.git
 ```
 
+### Install prerequisites
+* Python Version 2.7 or above
+* NumPy
+* matplotlib
+
 Please read examples.py to learn how to use the package.
