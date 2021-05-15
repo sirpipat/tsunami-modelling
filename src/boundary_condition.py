@@ -16,7 +16,7 @@ def apply_bc(u, bc):
     elif bc == 'reflecting_antisymmetric':
         apply_reflecting_antisymmetric(u)
     else:
-        raise Exception('%s is not set to an acceptable choice. Check spelling.' % bc)
+        raise NameException('%s is not set to an acceptable choice. Check spelling.' % bc)
 
 def apply_periodic(u):
     Nghost = u._nghost[0]

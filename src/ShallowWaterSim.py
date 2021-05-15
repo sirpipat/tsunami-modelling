@@ -15,12 +15,22 @@ from boundary_condition import *
 '''
 Representation
 
-_bGrid      bathymetry
-_hGrid      water depth (from bottom to surface)
-_uGrid      water flow speed
-_g          gravitational acceleration
-_bc         boundary conditions
+----- created during initialization -----
+_bGrid          bathymetry
+_hGrid          water depth (from bottom to surface)
+_uGrid          water flow speed
+_g              gravitational acceleration
+_bc             boundary conditions
+                    'periodic'
+                    'reflecting'
+                    'non-reflecting'
 
+------- created during simulation -------
+_problem        type of problems
+                    'passive'
+                    'shallowwater'
+_interp_scheme  interpolation scheme
+_limiter        limiter
 '''
 
 VERY_SMALL_NUMBER = 1e-7
@@ -29,10 +39,9 @@ class ShallowWaterSim(object):
         xmin = x[0] - (x[1] - x[0]) / 2
         xmax = x[-1] + (x[1] - x[0]) / 2
         Ngrid = np.size(x)
-        if bc == 'periodic':
-            Nghost = 3
-        else:
-            Nghost = 3
+        
+        # set the number of ghost cells
+        Nghost = 3
         
         # pad the values at the boundary for ghost cells
         b_padL = np.ones(Nghost) * b[0]
@@ -51,6 +60,7 @@ class ShallowWaterSim(object):
         self._bGrid = Grid1DCartesian(xmin, xmax, Ngrid, Nghost)
         self._bGrid.set_value(b, 'all')
         
+        # water height cannot be zero or negative
         h = maxmax(s - b, VERY_SMALL_NUMBER)
         
         self._hGrid = Grid1DCartesian(xmin, xmax, Ngrid, Nghost)
@@ -143,6 +153,18 @@ class ShallowWaterSim(object):
         return q[0], q[1]
     
     # advect 1 step
+    # TODO: Clean up this function
+    # Procedure
+    # - apply bc
+    # - find flux
+    # - do step 1
+    # - apply bc
+    # - find flux with values from step 1
+    # - do step 2
+    # ...
+    # - do step N
+    # - apply bc
+    # TODO: Implement other time-stepping scheme, possibly in a separated file
     def _advect_1step(self, x, q, b, g, t0, dt, bc = 'periodic'):
         # here assumes uniform grid
         dx = x[1] - x[0]
@@ -239,10 +261,11 @@ class ShallowWaterSim(object):
 
         return q_next, t
     
+    # computes flux at the cell boundary (limited)
     def _flux(self, x, q, b, g, bc = 'periodic'):
         
         c_abs = np.abs(q[1]) + (g * q[0]) ** 0.5
-        c_max = maxmax(c_abs[0,1], c_abs[-1,0]) * 1.1
+        c_max = maxmax(c_abs[0,1], c_abs[-1,0]) * 1.
         
         alpha = 4
         
@@ -252,65 +275,26 @@ class ShallowWaterSim(object):
         uR = np.flip(self._limiter(q[1].get_flip(), alpha, self._interp_scheme))
         bL = self._limiter(b, alpha, self._interp_scheme)
         bR = np.flip(self._limiter(b.get_flip(), alpha, self._interp_scheme))
-        '''
-        ### REMOVE EVERYTHING BETWEEN THE QUOTE
         
-        if bc == 'periodic':
-            q0 = q[0].get_value('grid')
-            q1 = q[1].get_value('grid')
-            c_abs = np.abs(q1) + np.sqrt(g * q0)
-            c_max = maxmax(c_abs, np.roll(c_abs, -1)) * 1.1
-        else:
-            c_abs = np.abs(q[1]) + (g * q[0]) ** 0.5
-            c_max = maxmax(c_abs[0,1], c_abs[-1,0]) * 1.1
-
-        if bc == 'periodic':
-            bb = b.get_value('grid')
-            hL, hR = self._find_uL_uR(x, q0)
-            uL, uR = self._find_uL_uR(x, q1)
-            bL, bR = self._find_uL_uR(x, bb)
-        else:
-            hL, hR = self._find_uL_uR(x, q[0], bc)
-            uL, uR = self._find_uL_uR(x, q[1], bc)
-            bL, bR = self._find_uL_uR(x, b, bc)
-        '''
-
         f_hatL = self._flux_hat(hL, uL, bL, g)
         f_hatR = self._flux_hat(hR, uR, bR, g)
 
         # Rusanov's method
         f = 1/2 * (f_hatL + f_hatR) - 1/2 * np.abs(c_max) * np.array([hR - hL, uR - uL])
-        '''
-        if bc == 'periodic':
-            f = np.concatenate((f[:,-1:], f), axis = 1)
-        '''
         return f
-
-    # make the function name more descriptive and relevant
-    def _find_uL_uR(self, x, u, bc = 'periodic'):
-        alpha = 4
-        if bc == 'periodic':
-            u1 = (7/12 * (u + np.roll(u, -1))) - (1/12 * (np.roll(u, 1) + np.roll(u, -2)))
-
-            uMPL = u + minmod(np.roll(u, -1) - u, alpha * (u - np.roll(u, 1)))
-            uL = median(u1, u, uMPL)
-            uMPR = np.roll(u, -1) + minmod(u - np.roll(u, -1), \
-                                           alpha * (np.roll(u, -1) - np.roll(u, -2)))
-            uR = median(u1, np.roll(u, -1), uMPR)
-        else:
-            u1 = (7/12 * (u[-1,0] + u[0,1])) - (1/12 * (u[-2,-1] + u[1,2]))
-
-            uMPL = u[-1,0] + minmod(u[0,1] - u[-1,0], alpha * (u[-1,0] - u[-2,-1]))
-            uL = median(u1, u[-1,0], uMPL)
-            uMPR = u[0,1] + minmod(u[-1,0] - u[0,1], alpha * (u[0,1] - u[1,2]))
-            uR = median(u1, u[0,1], uMPR)
-
-        return uL, uR
     
+    # computes the flux term F(q) on the equation
     def _flux_hat(self, h, u, b, g):
         f = np.array([u*h, 1/2*(u**2)+g*(h+b)])
         return f
     
+    # plots the following:
+    # title -- time and step number
+    # b(x)  -- bottom topograhpy
+    # s(x)  -- water surface: s = h + b
+    # u(x)  -- water flowing speed
+    # c(x)  -- wave speed: c = sqrt(gh)
+    # saved as plot_step_{step_number}.pdf
     def _plot_result(self, q, bGrid, g, t, steps, savedir):
         fig = plt.figure(figsize = [8,10])
         ax1 = fig.add_subplot(4,1,1)
@@ -348,7 +332,19 @@ class ShallowWaterSim(object):
         savename = savedir + '/plot_step_%06d.pdf' % steps
         plt.savefig(savename, dpi=300)
         plt.close()
-        
+    
+    # saves the state to a text file
+    # Format:
+    # # steps = ...
+    # # t     = ... s
+    # # g     = ... m/s^2
+    # x[0] b[0] s[0] u[0]
+    # x[1] b[1] s[1] u[0]
+    # ...  ...  ...  ...
+    # x[N] b[N] s[N] u[N]
+    #
+    # saved as data_{step_number}.txt
+    # use read_data('filename') to read the data from saved files.
     def _save_result(self, q, bGrid, g, t, steps, savedir):
         headertxt = 'steps = %6d\nt     = %.7f s\ng     = %.7f m/s^2' % (steps, t, g)
         x = bGrid.get_grid('grid')

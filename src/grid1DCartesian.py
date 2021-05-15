@@ -26,6 +26,10 @@ class Grid1DCartesian(Grid1D):
         self._x = (x[0:-1] + x[1:]) / 2
         self._u = np.zeros(np.shape(self._x))
     
+    """
+    Sets the grid and resets the value to zero.
+    Please set_value after that.
+    """
     def set_grid(self, xmin, xmax, ngrid, nghost):
         self._xmin = xmin * np.array([1])
         self._xmax = xmax * np.array([1])
@@ -40,6 +44,13 @@ class Grid1DCartesian(Grid1D):
         self._x = (x[0:-1] + x[1:]) / 2
         self._u = np.zeros(np.shape(self._x))
         
+    """
+    Sets values at the grid points.
+    
+    Options:
+    - 'all'   set values at all points including ghost cells
+    - 'grid'  set values only at cells inside interested domain and not ghost cells
+    """
     def set_value(self, u, option = 'all'):
         if option == 'grid':
             if np.size(u) != self._ngrid:
@@ -51,7 +62,15 @@ class Grid1DCartesian(Grid1D):
             if np.size(u) == self._ngrid + 2 * self._nghost:
                 raise ValueError('Input does not have the same size as the grid\n')
             self._u = deepcopy(u)
-        
+    
+    """
+    Gets positions of the cell centers.
+    
+    Options:
+    - 'all'   get positions of all points including ghost cells
+    - 'grid'  get positions only of cells inside interested domain and not ghost cells
+          shift indicate how many cell shift applied to the slicing
+    """
     def get_grid(self, option = 'all', shift = 0):
         if option == 'grid':
             a = self.get_first_grid()
@@ -59,7 +78,15 @@ class Grid1DCartesian(Grid1D):
             return deepcopy(self._x[(a[0]+shift):(b[0]+shift)])
         else:
             return deepcopy(self._x)
-        
+    
+    """
+    Gets values at the grid points.
+    
+    Options:
+    - 'all'   get values at all points including ghost cells
+    - 'grid'  get values only at cells inside interested domain and not ghost cells
+          shift indicate how many cell shift applied to the slicing
+    """
     def get_value(self, option = 'all', shift = 0):
         if option == 'grid':
             a = self.get_first_grid()

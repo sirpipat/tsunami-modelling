@@ -11,13 +11,13 @@
 #        Assumes x is equally spaced.
 #
 # OUTPUT:
-# ubL    values at the left of x_{j+1/2} boundary
+# ubL    values at the left of x_{j+1/2} boundary  (numpy.ndarray)
 #
 # If you want to computevalues at the right of x_{j+1/2} boundary,
 # supply the flipped version of u instead.
 #
-# ubL = interpolation_scheme(x, u)
-# ubR = interpolation_scheme(x, flip(u))
+# ubL = interpolation_scheme(u)
+# ubR = np.flip(interpolation_scheme(u.get_flip()))
 
 import numpy as np
 from minfunc import *

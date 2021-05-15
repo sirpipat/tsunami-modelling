@@ -15,6 +15,7 @@ class Grid(object):
     _xmin
     _xmax
     _ndim       number of dimensions
+    _type       type of the grid
     _ngrid      number of used grid cells
     _nghost     number of ghost cells appended to both ends
     _x          cell positions
@@ -38,8 +39,14 @@ class Grid(object):
     def get_ndims(self):
         return self._ndims
     
+    """
+    Return the first index of the interested domain
+    """
     def get_first_grid(self):
         return self._nghost
     
+    """
+    Return the first index of the ghost cell past the interested domain
+    """
     def get_last_grid(self):
         return self._nghost + self._ngrid

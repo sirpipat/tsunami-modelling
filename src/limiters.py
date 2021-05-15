@@ -1,8 +1,31 @@
+# Represents a limiter for finite volume method
+#
+# Function signature
+#
+# def limiter(u, alpha, interp_func):
+#     # do something
+#     return ubL
+#
+# INPUT:
+# u              interested values at x positions    (Grid1DCartesian)
+#                Assumes x is equally spaced.
+# alpha          the value alpha for MC limiter
+# interp_func    function to interpolate u_{j+1/2}^L
+#
+# OUTPUT:
+# ubL            limited values at the left of x_{j+1/2} boundary  (numpy.ndarray)
+#
+# If you want to computevalues at the right of x_{j+1/2} boundary,
+# supply the flipped version of u instead.
+#
+# ubL = limiter(u, alpha, interp_func)
+# ubR = np.flip(limiter(u.get_flip(), alpha, interp_func))
+
 from interpolation_scheme import *
 from Grid1DCartesian import *
 from minfunc import *
 
-
+# Second order accurate van Leer (1974) limiter
 def interp_vanLeer3(u, alpha = 4, interp_func = third_order_upwind):
     ubL = interp_func(u)
     
@@ -12,6 +35,7 @@ def interp_vanLeer3(u, alpha = 4, interp_func = third_order_upwind):
     ubL = median(ubL, u[-1,0], u_MP)
     return ubL
 
+# Fifth order accurate Suresh-Huynh (1997) limiter
 def interp_SuHu5(u, alpha = 4, interp_func = fifth_order_upwind):
     ubL = interp_func(u)
     
