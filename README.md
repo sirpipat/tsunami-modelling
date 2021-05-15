@@ -3,6 +3,8 @@ Final project for APC523 Spring 2021
 
 By Sirawich Pipatprathanporn sirawich@princeton.edu
 
+A tool to simulate shallow water wave propagation in one dimension. It will be expanded in the future to simulate more realistic tsunami.
+
 To install this package
 ```
 git clone git@github.com:sirpipat/tsunami-modelling.git
