@@ -13,4 +13,6 @@ git clone git@github.com:sirpipat/tsunami-modelling.git
 * NumPy
 * matplotlib
 
+[Anaconda](https://docs.anaconda.com/anaconda/install/)
+
 Please read examples.py to learn how to use the package.
